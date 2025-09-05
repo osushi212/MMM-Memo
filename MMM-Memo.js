@@ -1,22 +1,25 @@
-/* MMM-Memo.js */
 Module.register("MMM-Memo", {
     defaults: {
         memofile: "modules/MMM-Memo/memo.txt",
         width: "200px",
-        refreshInterval: 5000
+        refreshInterval: 15000 // reload every 15sec
     },
 
     start: function() {
         this.memoText = [];
         this.sendSocketNotification("CONFIG", this.config);
         this.updateMemo();
+
         setInterval(() => this.updateMemo(), this.config.refreshInterval);
     },
 
     socketNotificationReceived: function(notification, payload) {
         if (notification === "MEMO_UPDATE") {
-            this.memoText = payload;
-            this.updateDom(1000);
+            // if no changes, no update
+            if (JSON.stringify(this.memoText) !== JSON.stringify(payload)) {
+                this.memoText = payload;
+                this.updateDom(0); // update now
+            }
         }
     },
 
@@ -69,6 +72,6 @@ Module.register("MMM-Memo", {
     },
 
     randomAngle: function() {
-        return Math.floor(Math.random() * 10 - 5); // -5～+5度
+        return Math.floor(Math.random() * 10 - 5); // -5～+5deg
     }
 });

@@ -1,76 +1,85 @@
+/* MMM-Memo.js */
 Module.register("MMM-Memo", {
     defaults: {
         memofile: "modules/MMM-Memo/memo.txt",
-        width: "200px",
-        refreshInterval: 15000 // 15秒
+        defaultColor: "#fffa65",
+        defaultAngle: 0,
+        defaultFontColor: "#000000"
     },
 
-    start: function() {
-        this.memoData = [];
-        this.sendSocketNotification("CONFIG", this.config);
-        this.updateMemo();
-
-        setInterval(() => this.updateMemo(), this.config.refreshInterval);
+    start: function () {
+        this.memos = {}; // タイトルをキーにしたメモ格納
+        this.loadMemos();
     },
 
-    socketNotificationReceived: function(notification, payload) {
-        if (notification === "MEMO_UPDATE") {
-            if (JSON.stringify(this.memoData) !== JSON.stringify(payload)) {
-                this.memoData = payload;
-                this.updateDom(0);
-            }
-        }
-    },
-
-    updateMemo: function() {
-        this.sendSocketNotification("READ_MEMO");
-    },
-
-    getDom: function() {
+    getDom: function () {
         const wrapper = document.createElement("div");
-        wrapper.className = "MMM-Memo-wrapper";
+        wrapper.className = "mmm-memo-wrapper";
 
-        this.memoData.forEach((memo) => {
-            const memoDiv = document.createElement("div");
-            memoDiv.className = "MMM-Memo-note";
-            memoDiv.style.width = this.config.width;
-            memoDiv.style.backgroundColor = memo.bgColor || this.randomColor();
-            memoDiv.style.color = memo.textColor || "#000";
-            memoDiv.style.transform = `rotate(${memo.angle || this.randomAngle()}deg)`;
-            memoDiv.style.padding = "10px";
-            memoDiv.style.margin = "5px";
-            memoDiv.style.boxShadow = "2px 2px 5px rgba(0,0,0,0.3)";
-            memoDiv.style.borderRadius = "8px";
-            memoDiv.style.whiteSpace = "pre-wrap";
-            memoDiv.style.fontFamily = "Arial, sans-serif";
-            memoDiv.style.fontSize = "14px";
+        for (const [title, memoData] of Object.entries(this.memos)) {
+            const postIt = document.createElement("div");
+            postIt.className = "mmm-memo-postit";
+            postIt.style.backgroundColor = memoData.color;
+            postIt.style.color = memoData.fontColor;
+            postIt.style.transform = `rotate(${memoData.angle}deg)`;
 
-            if (memo.title) {
-                const header = document.createElement("div");
-                header.className = "MMM-Memo-header";
-                header.innerText = memo.title;
-                header.style.fontWeight = "bold";
-                header.style.marginBottom = "5px";
-                memoDiv.appendChild(header);
-            }
+            const header = document.createElement("div");
+            header.className = "mmm-memo-header";
+            header.innerText = title;
+            postIt.appendChild(header);
 
             const content = document.createElement("div");
-            content.className = "MMM-Memo-content";
-            content.innerText = memo.text;
-            memoDiv.appendChild(content);
+            content.className = "mmm-memo-content";
+            content.innerHTML = memoData.texts.map(t => `<div>${t}</div>`).join("");
+            postIt.appendChild(content);
 
-            wrapper.appendChild(memoDiv);
-        });
+            wrapper.appendChild(postIt);
+        }
 
         return wrapper;
     },
 
-    randomColor: function() {
-        const colors = ["#fff9a7","#fffae0","#ffd1d1","#d1ffd1","#d1e0ff"];
-        return colors[Math.floor(Math.random() * colors.length)];
+    loadMemos: function () {
+        const self = this;
+        fetch(this.config.memofile)
+            .then(resp => resp.text())
+            .then(data => {
+                data.split("\n").forEach(line => {
+                    if (!line) return;
+                    const [title, text, color, angle, fontColor] = line.split("|");
+                    self.addMemo(title, text, color, parseInt(angle), fontColor, false);
+                });
+                self.updateDom();
+            });
     },
 
-    randomAngle: function() {
-        return Math.floor(Math.random() * 10 - 5);
+    addMemo: function (title, text, color, angle, fontColor, save = true) {
+        if (!this.memos[title]) {
+            this.memos[title] = {
+                texts: [],
+                color: color,
+                angle: angle,
+                fontColor: fontColor
+            };
+        }
+        this.memos[title].texts.push(text);
+        this.updateDom();
+
+        if (save) this.saveMemo(title, text, color, angle, fontColor);
+    },
+
+    saveMemo: function (title, text, color, angle, fontColor) {
+        // 追記
+        fetch(this.config.memofile, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `title=${encodeURIComponent(title)}&text=${encodeURIComponent(text)}&color=${encodeURIComponent(color)}&angle=${angle}&fontColor=${encodeURIComponent(fontColor)}`
+        }).catch(err => console.error(err));
+    },
+
+    socketNotificationReceived: function (notification, payload) {
+        if (notification === "ADD_MEMO") {
+            this.addMemo(payload.title, payload.text, payload.color, payload.angle, payload.fontColor);
+        }
     }
 });

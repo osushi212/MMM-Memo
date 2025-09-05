@@ -1,4 +1,3 @@
-/* node_helper.js */
 const NodeHelper = require("node_helper");
 const fs = require("fs");
 const express = require("express");
@@ -72,7 +71,7 @@ module.exports = NodeHelper.create({
     appendMemo: function(memo) {
         try {
             fs.appendFileSync(this.config.memofile, JSON.stringify(memo) + "\n");
-            this.readMemoFile();
+            this.readMemoFile(); // 追加したら即反映
         } catch (e) {
             console.error("MMM-Memo append error:", e);
         }

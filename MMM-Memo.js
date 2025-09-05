@@ -1,35 +1,74 @@
+/* MMM-Memo.js */
 Module.register("MMM-Memo", {
     defaults: {
-        memofile: "/home/yasushi/MagicMirror/modules/MMM-Memo/memo.txt"
+        memofile: "modules/MMM-Memo/memo.txt",
+        width: "200px",
+        refreshInterval: 5000
     },
 
     start: function() {
-        this.memoText = "";
-        console.log("MMM-Memo started");
-
-        // NodeHelper に読み込み依頼
-        this.sendSocketNotification("GET_MEMO", { path: this.config.memofile });
-
-        // 定期更新（5秒ごと）
-        this.updateInterval = setInterval(() => {
-            this.sendSocketNotification("GET_MEMO", { path: this.config.memofile });
-        }, 5000);
+        this.memoText = [];
+        this.sendSocketNotification("CONFIG", this.config);
+        this.updateMemo();
+        setInterval(() => this.updateMemo(), this.config.refreshInterval);
     },
 
     socketNotificationReceived: function(notification, payload) {
-        if (notification === "MEMO_TEXT") {
+        if (notification === "MEMO_UPDATE") {
             this.memoText = payload;
-            this.updateDom();
+            this.updateDom(1000);
         }
+    },
+
+    updateMemo: function() {
+        this.sendSocketNotification("READ_MEMO");
     },
 
     getDom: function() {
         const wrapper = document.createElement("div");
-        wrapper.innerHTML = this.memoText.replace(/\n/g, "<br>");
+        wrapper.className = "MMM-Memo-wrapper";
+
+        this.memoText.forEach((memo) => {
+            const memoDiv = document.createElement("div");
+            memoDiv.className = "MMM-Memo-note";
+            memoDiv.style.width = this.config.width;
+            memoDiv.style.backgroundColor = memo.bgColor || this.randomColor();
+            memoDiv.style.color = memo.textColor || "#000000";
+            memoDiv.style.transform = `rotate(${memo.angle || this.randomAngle()}deg)`;
+            memoDiv.style.padding = "10px";
+            memoDiv.style.margin = "5px";
+            memoDiv.style.boxShadow = "2px 2px 5px rgba(0,0,0,0.3)";
+            memoDiv.style.borderRadius = "8px";
+            memoDiv.style.whiteSpace = "pre-wrap";
+            memoDiv.style.fontFamily = "Arial, sans-serif";
+            memoDiv.style.fontSize = "14px";
+
+            if (memo.title) {
+                const header = document.createElement("div");
+                header.className = "MMM-Memo-header";
+                header.innerText = memo.title;
+                header.style.fontWeight = "bold";
+                header.style.marginBottom = "5px";
+                memoDiv.appendChild(header);
+            }
+
+            const content = document.createElement("div");
+            content.className = "MMM-Memo-content";
+            content.innerText = memo.text;
+            memoDiv.appendChild(content);
+
+            wrapper.appendChild(memoDiv);
+        });
+
         return wrapper;
     },
 
-    suspend: function() {
-        clearInterval(this.updateInterval);
+    randomColor: function() {
+        const colors = ["#fff9a7","#fffae0","#ffd1d1","#d1ffd1","#d1e0ff"];
+        return colors[Math.floor(Math.random() * colors.length)];
+    },
+
+    randomAngle: function() {
+        return Math.floor(Math.random() * 10 - 5); // -5～+5度
     }
 });

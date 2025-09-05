@@ -2,11 +2,11 @@ Module.register("MMM-Memo", {
     defaults: {
         memofile: "modules/MMM-Memo/memo.txt",
         width: "200px",
-        refreshInterval: 15000 // reload every 15sec
+        refreshInterval: 15000 // 15秒
     },
 
     start: function() {
-        this.memoText = [];
+        this.memoData = [];
         this.sendSocketNotification("CONFIG", this.config);
         this.updateMemo();
 
@@ -15,10 +15,9 @@ Module.register("MMM-Memo", {
 
     socketNotificationReceived: function(notification, payload) {
         if (notification === "MEMO_UPDATE") {
-            // if no changes, no update
-            if (JSON.stringify(this.memoText) !== JSON.stringify(payload)) {
-                this.memoText = payload;
-                this.updateDom(0); // update now
+            if (JSON.stringify(this.memoData) !== JSON.stringify(payload)) {
+                this.memoData = payload;
+                this.updateDom(0);
             }
         }
     },
@@ -31,12 +30,12 @@ Module.register("MMM-Memo", {
         const wrapper = document.createElement("div");
         wrapper.className = "MMM-Memo-wrapper";
 
-        this.memoText.forEach((memo) => {
+        this.memoData.forEach((memo) => {
             const memoDiv = document.createElement("div");
             memoDiv.className = "MMM-Memo-note";
             memoDiv.style.width = this.config.width;
             memoDiv.style.backgroundColor = memo.bgColor || this.randomColor();
-            memoDiv.style.color = memo.textColor || "#000000";
+            memoDiv.style.color = memo.textColor || "#000";
             memoDiv.style.transform = `rotate(${memo.angle || this.randomAngle()}deg)`;
             memoDiv.style.padding = "10px";
             memoDiv.style.margin = "5px";
@@ -72,6 +71,6 @@ Module.register("MMM-Memo", {
     },
 
     randomAngle: function() {
-        return Math.floor(Math.random() * 10 - 5); // -5～+5deg
+        return Math.floor(Math.random() * 10 - 5);
     }
 });

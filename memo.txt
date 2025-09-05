@@ -1,1 +1,2 @@
-I am test
+{"text":"wishlist","title":"today","bgColor":"#ffd1d1","textColor":"#000000","angle":2}
+{"text":"make document","title":"work","bgColor":"#d1ffd1","textColor":"#000000","angle":-3}

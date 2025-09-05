@@ -1,86 +1,66 @@
+/* node_helper.js */
 const NodeHelper = require("node_helper");
 const fs = require("fs");
 const express = require("express");
+const bodyParser = require("body-parser");
 
 module.exports = NodeHelper.create({
-    start: function() {
-        this.memoData = [];
-        this.config = {};
-        this.expressApp = express();
-        this.expressApp.use(express.json());
+    start: function () {
+        console.log("MMM-Memo helper started");
+        this.memosFile = this.config?.memofile || "modules/MMM-Memo/memo.txt";
+        this.setupHTTP();
     },
 
-    socketNotificationReceived: function(notification, payload) {
-        if (notification === "CONFIG") {
-            this.config = payload;
-            this.readMemoFile();
-            this.setupHTTP();
-        } else if (notification === "READ_MEMO") {
-            this.readMemoFile();
-        }
-    },
+    setupHTTP: function () {
+        const app = express();
+        app.use(bodyParser.urlencoded({ extended: true }));
 
-    readMemoFile: function() {
-        try {
-            if (!fs.existsSync(this.config.memofile)) fs.writeFileSync(this.config.memofile, "");
-            const data = fs.readFileSync(this.config.memofile, "utf-8");
-            const lines = data.split("\n").filter(l => l.trim() !== "");
-            this.memoData = lines.map(line => {
-                try { return JSON.parse(line); } 
-                catch(e) { return { title:"", text:line, bgColor:"#fff9a7", textColor:"#000", angle:0 }; }
-            });
-            this.sendSocketNotification("MEMO_UPDATE", this.memoData);
-        } catch(e) {
-            console.error("MMM-Memo read error:", e);
-        }
-    },
-
-    setupHTTP: function() {
+        // LAN公開
         const port = 8081;
-        const app = this.expressApp;
-
-        app.get("/memo", (req, res) => {
-            const memo = {
-                title: req.query.title || "",
-                text: req.query.text || "",
-                bgColor: req.query.bgColor,
-                textColor: req.query.textColor,
-                angle: req.query.angle ? parseInt(req.query.angle) : undefined
-            };
-            if (memo.text) this.appendMemo(memo);
-            res.send({ success: !!memo.text, memo });
+        this.httpServer = app.listen(port, "0.0.0.0", () => {
+            console.log(`MMM-Memo HTTP server running on port ${port}`);
         });
 
-        app.post("/memo", (req, res) => {
-            const memo = req.body;
-            if (memo && memo.text) this.appendMemo(memo);
-            res.send({ success: !!(memo && memo.text), memo });
-        });
+        // GET / POST 両対応でメモ追加
+        const addHandler = (req, res) => {
+            let { title, text, color, angle, fontColor } = req.method === "POST" ? req.body : req.query;
 
-        this.httpServer = app.listen(port, () => {
-            console.log("MMM-Memo HTTP server running on port", port);
-        });
+            if (!text) return res.status(400).send("text は必須です");
+
+            // タイトルがない場合 → 新規付箋
+            if (!title) {
+                title = `メモ_${Date.now()}`;
+                color = color || this.getRandomColor();
+                angle = angle ? parseInt(angle) : this.getRandomAngle();
+                fontColor = fontColor || "#000000";
+            } else {
+                color = color || "#fffa65";
+                angle = angle ? parseInt(angle) : 0;
+                fontColor = fontColor || "#000000";
+            }
+
+            // クライアントに通知
+            this.sendSocketNotification("ADD_MEMO", { title, text, color, angle, fontColor });
+
+            // ファイル追記
+            const line = `${title}|${text}|${color}|${angle}|${fontColor}\n`;
+            fs.appendFile(this.memosFile, line, err => {
+                if (err) console.error(err);
+            });
+
+            res.send(`メモ "${title}" を追加しました`);
+        };
+
+        app.get("/add", addHandler);
+        app.post("/add", addHandler);
     },
 
-    appendMemo: function(newMemo) {
-        // 同じタイトルがあれば追記
-        let found = false;
-        this.memoData.forEach(m => {
-            if (m.title === newMemo.title) {
-                m.text += "\n" + newMemo.text;
-                found = true;
-            }
-        });
+    getRandomColor: function () {
+        const colors = ["#fffa65", "#ffd966", "#ffe599", "#c9daf8", "#d9ead3"];
+        return colors[Math.floor(Math.random() * colors.length)];
+    },
 
-        if (!found) this.memoData.push(newMemo);
-
-        try {
-            // ファイル書き込み（全体を書き直す）
-            const lines = this.memoData.map(m => JSON.stringify(m));
-            fs.writeFileSync(this.config.memofile, lines.join("\n") + "\n");
-            this.sendSocketNotification("MEMO_UPDATE", this.memoData);
-        } catch(e) {
-            console.error("MMM-Memo append error:", e);
-        }
+    getRandomAngle: function () {
+        return Math.floor(Math.random() * 21) - 10; // -10〜+10度
     }
 });

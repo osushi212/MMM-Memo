@@ -4,7 +4,7 @@ const express = require("express");
 
 module.exports = NodeHelper.create({
     start: function() {
-        this.memoText = [];
+        this.memoData = [];
         this.config = {};
         this.expressApp = express();
         this.expressApp.use(express.json());
@@ -22,19 +22,15 @@ module.exports = NodeHelper.create({
 
     readMemoFile: function() {
         try {
-            if (!fs.existsSync(this.config.memofile)) {
-                fs.writeFileSync(this.config.memofile, "");
-            }
+            if (!fs.existsSync(this.config.memofile)) fs.writeFileSync(this.config.memofile, "");
             const data = fs.readFileSync(this.config.memofile, "utf-8");
-            this.memoText = data.split("\n").filter(line => line.trim() !== "").map(line => {
-                try {
-                    return JSON.parse(line);
-                } catch(e) {
-                    return { text: line, title: "", bgColor: "#fff9a7", textColor: "#000000", angle: 0 };
-                }
+            const lines = data.split("\n").filter(l => l.trim() !== "");
+            this.memoData = lines.map(line => {
+                try { return JSON.parse(line); } 
+                catch(e) { return { title:"", text:line, bgColor:"#fff9a7", textColor:"#000", angle:0 }; }
             });
-            this.sendSocketNotification("MEMO_UPDATE", this.memoText);
-        } catch (e) {
+            this.sendSocketNotification("MEMO_UPDATE", this.memoData);
+        } catch(e) {
             console.error("MMM-Memo read error:", e);
         }
     },
@@ -43,20 +39,18 @@ module.exports = NodeHelper.create({
         const port = 8081;
         const app = this.expressApp;
 
-        // GET /memo?text=メモ内容&title=&bgColor=&textColor=&angle=
         app.get("/memo", (req, res) => {
             const memo = {
-                text: req.query.text || "",
                 title: req.query.title || "",
-                bgColor: req.query.bgColor || undefined,
-                textColor: req.query.textColor || undefined,
+                text: req.query.text || "",
+                bgColor: req.query.bgColor,
+                textColor: req.query.textColor,
                 angle: req.query.angle ? parseInt(req.query.angle) : undefined
             };
             if (memo.text) this.appendMemo(memo);
             res.send({ success: !!memo.text, memo });
         });
 
-        // POST /memo { "text":"", "title":"", "bgColor":"", "textColor":"", "angle":3 }
         app.post("/memo", (req, res) => {
             const memo = req.body;
             if (memo && memo.text) this.appendMemo(memo);
@@ -68,11 +62,24 @@ module.exports = NodeHelper.create({
         });
     },
 
-    appendMemo: function(memo) {
+    appendMemo: function(newMemo) {
+        // 同じタイトルがあれば追記
+        let found = false;
+        this.memoData.forEach(m => {
+            if (m.title === newMemo.title) {
+                m.text += "\n" + newMemo.text;
+                found = true;
+            }
+        });
+
+        if (!found) this.memoData.push(newMemo);
+
         try {
-            fs.appendFileSync(this.config.memofile, JSON.stringify(memo) + "\n");
-            this.readMemoFile(); // 追加したら即反映
-        } catch (e) {
+            // ファイル書き込み（全体を書き直す）
+            const lines = this.memoData.map(m => JSON.stringify(m));
+            fs.writeFileSync(this.config.memofile, lines.join("\n") + "\n");
+            this.sendSocketNotification("MEMO_UPDATE", this.memoData);
+        } catch(e) {
             console.error("MMM-Memo append error:", e);
         }
     }

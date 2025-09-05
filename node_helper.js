@@ -1,73 +1,80 @@
+/* node_helper.js */
 const NodeHelper = require("node_helper");
 const fs = require("fs");
 const express = require("express");
 
 module.exports = NodeHelper.create({
     start: function() {
-        console.log("MMM-Memo helper started");
-
-        this.memoPath = null; // ファイルパス保存
-
-        this.app = express();
-        this.app.use(express.json());
-
-        // POST /memo でメモ更新
-        this.app.post("/memo", (req, res) => {
-            const newText = req.body.text;
-            if (!newText) return res.status(400).send("text missing");
-            this._appendMemo(newText, res);
-        });
-
-        // GET /memo?text=任意の文字列 でも更新可能
-        this.app.get("/memo", (req, res) => {
-            const newText = req.query.text;
-            if (!newText) return res.status(400).send("text missing");
-            this._appendMemo(newText, res);
-        });
-
-        this.server = this.app.listen(8081, () => {
-            console.log("MMM-Memo HTTP server running on port 8081");
-        });
-    },
-
-    _appendMemo: function(newText, res) {
-        if (!this.memoPath) {
-            console.error("MMM-Memo: memofile path is not set");
-            return res.status(500).send("memofile path not set");
-        }
-
-        try {
-            // 既存メモを取得
-            let oldText = "";
-            if (fs.existsSync(this.memoPath)) {
-                oldText = fs.readFileSync(this.memoPath, "utf8");
-            }
-
-            // 改行付きで追記
-            const updatedText = oldText ? oldText + "\n" + newText : newText;
-
-            fs.writeFileSync(this.memoPath, updatedText, "utf8");
-
-            // 即座に画面に反映
-            this.sendSocketNotification("MEMO_TEXT", updatedText);
-
-            res.send("OK");
-        } catch (err) {
-            console.error("MMM-Memo write error:", err);
-            res.status(500).send("write error");
-        }
+        this.memoText = [];
+        this.config = {};
+        this.expressApp = express();
+        this.expressApp.use(express.json());
     },
 
     socketNotificationReceived: function(notification, payload) {
-        if (notification === "GET_MEMO") {
-            this.memoPath = payload.path;
-            try {
-                const text = fs.readFileSync(payload.path, "utf8");
-                this.sendSocketNotification("MEMO_TEXT", text);
-            } catch (err) {
-                console.error("MMM-Memo read error:", err);
-                this.sendSocketNotification("MEMO_TEXT", "メモ読み込みエラー");
+        if (notification === "CONFIG") {
+            this.config = payload;
+            this.readMemoFile();
+            this.setupHTTP();
+        } else if (notification === "READ_MEMO") {
+            this.readMemoFile();
+        }
+    },
+
+    readMemoFile: function() {
+        try {
+            if (!fs.existsSync(this.config.memofile)) {
+                fs.writeFileSync(this.config.memofile, "");
             }
+            const data = fs.readFileSync(this.config.memofile, "utf-8");
+            this.memoText = data.split("\n").filter(line => line.trim() !== "").map(line => {
+                try {
+                    return JSON.parse(line);
+                } catch(e) {
+                    return { text: line, title: "", bgColor: "#fff9a7", textColor: "#000000", angle: 0 };
+                }
+            });
+            this.sendSocketNotification("MEMO_UPDATE", this.memoText);
+        } catch (e) {
+            console.error("MMM-Memo read error:", e);
+        }
+    },
+
+    setupHTTP: function() {
+        const port = 8081;
+        const app = this.expressApp;
+
+        // GET /memo?text=メモ内容&title=&bgColor=&textColor=&angle=
+        app.get("/memo", (req, res) => {
+            const memo = {
+                text: req.query.text || "",
+                title: req.query.title || "",
+                bgColor: req.query.bgColor || undefined,
+                textColor: req.query.textColor || undefined,
+                angle: req.query.angle ? parseInt(req.query.angle) : undefined
+            };
+            if (memo.text) this.appendMemo(memo);
+            res.send({ success: !!memo.text, memo });
+        });
+
+        // POST /memo { "text":"", "title":"", "bgColor":"", "textColor":"", "angle":3 }
+        app.post("/memo", (req, res) => {
+            const memo = req.body;
+            if (memo && memo.text) this.appendMemo(memo);
+            res.send({ success: !!(memo && memo.text), memo });
+        });
+
+        this.httpServer = app.listen(port, () => {
+            console.log("MMM-Memo HTTP server running on port", port);
+        });
+    },
+
+    appendMemo: function(memo) {
+        try {
+            fs.appendFileSync(this.config.memofile, JSON.stringify(memo) + "\n");
+            this.readMemoFile();
+        } catch (e) {
+            console.error("MMM-Memo append error:", e);
         }
     }
 });

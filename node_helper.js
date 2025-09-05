@@ -1,66 +1,50 @@
 /* node_helper.js */
 const NodeHelper = require("node_helper");
-const fs = require("fs");
 const express = require("express");
-const bodyParser = require("body-parser");
+const fs = require("fs");
+const path = require("path");
 
 module.exports = NodeHelper.create({
-    start: function () {
-        console.log("MMM-Memo helper started");
-        this.memosFile = this.config?.memofile || "modules/MMM-Memo/memo.txt";
-        this.setupHTTP();
-    },
+  start: function() {
+    this.memos = [];
+    this.httpServer = null;
+  },
 
-    setupHTTP: function () {
-        const app = express();
-        app.use(bodyParser.urlencoded({ extended: true }));
-
-        // LAN公開
-        const port = 8081;
-        this.httpServer = app.listen(port, "0.0.0.0", () => {
-            console.log(`MMM-Memo HTTP server running on port ${port}`);
-        });
-
-        // GET / POST 両対応でメモ追加
-        const addHandler = (req, res) => {
-            let { title, text, color, angle, fontColor } = req.method === "POST" ? req.body : req.query;
-
-            if (!text) return res.status(400).send("text は必須です");
-
-            // タイトルがない場合 → 新規付箋
-            if (!title) {
-                title = `メモ_${Date.now()}`;
-                color = color || this.getRandomColor();
-                angle = angle ? parseInt(angle) : this.getRandomAngle();
-                fontColor = fontColor || "#000000";
-            } else {
-                color = color || "#fffa65";
-                angle = angle ? parseInt(angle) : 0;
-                fontColor = fontColor || "#000000";
-            }
-
-            // クライアントに通知
-            this.sendSocketNotification("ADD_MEMO", { title, text, color, angle, fontColor });
-
-            // ファイル追記
-            const line = `${title}|${text}|${color}|${angle}|${fontColor}\n`;
-            fs.appendFile(this.memosFile, line, err => {
-                if (err) console.error(err);
-            });
-
-            res.send(`メモ "${title}" を追加しました`);
-        };
-
-        app.get("/add", addHandler);
-        app.post("/add", addHandler);
-    },
-
-    getRandomColor: function () {
-        const colors = ["#fffa65", "#ffd966", "#ffe599", "#c9daf8", "#d9ead3"];
-        return colors[Math.floor(Math.random() * colors.length)];
-    },
-
-    getRandomAngle: function () {
-        return Math.floor(Math.random() * 21) - 10; // -10〜+10度
+  socketNotificationReceived: function(notification, payload) {
+    if(notification === "MMM-MEMO-INIT") {
+      this.memofile = payload;
+      this.loadMemos();
+      this.setupHTTP();
     }
+  },
+
+  loadMemos: function() {
+    if(fs.existsSync(this.memofile)) {
+      const data = fs.readFileSync(this.memofile, "utf8");
+      this.memos = data.split("\n").filter(Boolean).map(line => {
+        try { return JSON.parse(line); } catch { return {title:"無題", content:line}; }
+      });
+    }
+  },
+
+  setupHTTP: function() {
+    if(this.httpServer) return; // すでに起動済み
+    const app = express();
+    app.use(express.json());
+
+    // HTTPでメモを追加
+    app.post("/add", (req,res)=>{
+      const {title, content, color, angle, fontColor} = req.body;
+      if(!content) return res.status(400).send("content is required");
+
+      this.sendSocketNotification("MMM-MEMO-UPDATE", {title, content, color, angle, fontColor});
+      // ファイルにも追記
+      const line = JSON.stringify({title:title||"無題", content, color, angle, fontColor});
+      fs.appendFileSync(this.memofile, line+"\n");
+
+      res.send("ok");
+    });
+
+    this.httpServer = app.listen(8081, ()=>console.log("MMM-Memo HTTP server running on port 8081"));
+  }
 });

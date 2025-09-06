@@ -18,7 +18,7 @@ cd ~/MagicMirror/modules
 
 Clone this repository:
 ````
-git clone https://github.com/snille/MMM-Memo.git
+git clone https://github.com/osushi212/MMM-Memo.git
 ````
 
 ## Using the module
@@ -28,7 +28,7 @@ To use this module, add it to the modules array in the `config/config.js` file:
 modules: [
     {
         module: 'MMM-Memo',
-        position: 'top_left',
+        position: 'top_right',
         classes: 'default everyone',        // if using MMM-ProfileSwitcher module
         config: {
             // See 'Configuration options' for more information.
@@ -74,7 +74,7 @@ I'm using this module with my Jarvis installation from [DomotiqueFacile](http://
 
 ### To add 'Fruits' to the 'Shopping' memo note:
 ````
-http://MIRROR_IP:MIRROR_PORT/AddMemo?memoTitle=SHOPPING&item=Fruits&level=INFO
+http://MIRROR_IP:8081/memo?text=Fruits&title=shopping&bgColor=%23fff9a7&textColor=%23000000&angle=1
 ````
 **NOTE** : The level property is optional in the request. If not specified, the `INFO` level will be set.
 

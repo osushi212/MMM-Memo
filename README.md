@@ -74,7 +74,7 @@ I'm using this module with my Jarvis installation from [DomotiqueFacile](http://
 
 ### To add 'Fruits' to the 'Shopping' memo note:
 ````
-http://MIRROR_IP:8081/memo?text=Fruits&title=shopping&bgColor=%23fff9a7&textColor=%23000000&angle=1
+http://MIRROR_IP:8081/memo?text=Fruits&title=Shopping
 ````
 **NOTE** : The level property is optional in the request. If not specified, the `INFO` level will be set.
 

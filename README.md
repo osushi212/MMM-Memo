@@ -4,7 +4,8 @@ This an extension for the [MagicMirror²](https://magicmirror.builders/).
 <br>Content is manageable through HTTP get requests.
 
 ## What does it look like
-![alt tag](https://github.com/schnibel/MMM-Memo/blob/master/img/MMM-Memo.png)
+<img width="604" height="735" alt="スクリーンショット 2025-09-07 002420" src="https://github.com/user-attachments/assets/27eeafa0-5f3b-4bbd-9fc3-ee4ddf7d587d" />
+
 
 ## Dependencies
   * An installation of [MagicMirror<sup>2</sup>](https://github.com/MichMich/MagicMirror)
@@ -29,41 +30,13 @@ modules: [
     {
         module: 'MMM-Memo',
         position: 'top_right',
-        classes: 'default everyone',        // if using MMM-ProfileSwitcher module
         config: {
-            // See 'Configuration options' for more information.
-            ...
+            memofile: '/home/pi/MagicMirror/modules/MMM-Memo/memo.txt'
         }
     }
 ]
 ````
 If you declare several modules in the `config/config.js` file, you will get several memo notes on your MagicMirror<sup>2</sup> profile.
-
-## Configuration options
-
-The following properties can be configured:
-
-| Option                     | Description
-| -------------------------- | -----------
-| `memoTitle`                | [MANDATORY]<br>Title of the memo note.<br>This title is also used to retreive memos from the persistence file.<br><br> **This is NOT case sensitive**
-| `memoMaxItems`             | [OPTIONAL]<br>Integer used to define the maximum number of memo to display per note.<br>If the number of memos is greater than the one specified here, a message (e.g. `+ 2 more memos`) will be displayed at the bottom of the note.<br><br> **Default value:** `5`
-| `memoMaxMsgSize`           | [OPTIONAL]<br>Integer used to define the maximum number of characters to be displayed per memo.<br><br> **Default value:** `false` (It will show all characters)
-| `memoDisplayDuration`      | [OPTIONAL]<br>Used to show since when memos have been created.<br><br> **Possible values:** `true` or `false`<br> **Default value:** `false`
-| `memoDisplayIfEmpty`       | [OPTIONAL]<br>Used to display (or not) an empty note if there is no memo inside.<br><br> **Possible values:** `true` or `false`<br> **Default value:** `false`
-| `memoDisplayId`            | [OPTIONAL]<br>Used to display (or not) a number before each memo. This number is necessary to remove a memo.<br><br>**Note that this unicode character is limited to 20**<br><br> **Possible values:** `true` or `false`<br> **Default value:** `true`
-| `memoDisplayHeader`        | [OPTIONAL]<br>Used to display (or not) the memoTitle at the top of the note.<br><br> **Possible values:** `true` or `false`<br> **Default value:** `true`
-| `memoDisplayNotification`  | [OPTIONAL]<br>Used to display (or not) the notification using the default alert module.<br>See [How to use](#to-temporary-display-the-second-memo-of-the-shopping-memo-note) section for more information on this property.<br><br> **Possible values:** `true` or `false`<br> **Default value:** `false`
-| `memoColorBackground`      | [OPTIONAL]<br>Used to define the color of the note.<br><br> **Possible values:** See [Colors](#colors) for more information.<br> **Default value:** `Yellow`
-| `memoColorHeader`          | [OPTIONAL]<br>Used to define the color of the header (if displayed).<br><br> **Possible values:** See [Colors](#colors) for more information.<br> **Default value:** `Black`
-| `memoColorFont`            | [OPTIONAL]<br>Used to define the color of the memo font.<br><br> **Possible values:** See [Colors](#colors) for more information.<br> **Default value:** `Black`
-| `memoColorWarning`         | [OPTIONAL]<br>Used to define the color of a WARNING note.<br><br> **Possible values:** See [Colors](#colors) for more information.<br> **Default value:** `Red`
-| `memoRotation`             | [OPTIONAL]<br>Used to rotate the note.<br><br> **Possible values:** `-10` or `-8` or `-6` or `-4` or `-2` or `0` or `2` or `4` or `6` or `8` or `10`<br> **Default value:** `0`
-| `memoWidth`                | [OPTIONAL]<br>Value to specify the width of the note.<br><br> **Default value:** `100px`
-| `memoHeight`               | [OPTIONAL]<br>Value to specify the height of the note.<br><br> **Default value:** `100px`
-| `memoPadding`              | [OPTIONAL]<br>Value to specify the padding of the note.<br><br> **Default value:** `20px`
-| `memoItemAllign`           | [OPTIONAL]<br>To set the note entry either alligned to the "left" or to the "right".<br><br> **Default value:** `right`
-| `format`                   | [OPTIONAL]<br>Displays relative date format, for absolute date format provide a string like `'DD:MM HH:mm'` [All Options](http://momentjs.com/docs/#/displaying/format/)
-
 
 
 ## How to Use
@@ -75,17 +48,6 @@ I'm using this module with my Jarvis installation from [DomotiqueFacile](http://
 ### To add 'Fruits' to the 'Shopping' memo note:
 ````
 http://MIRROR_IP:8081/memo?text=Fruits&title=Shopping
-````
-**NOTE** : The level property is optional in the request. If not specified, the `INFO` level will be set.
-
-### To add 'Daddy: +33123456789' to the 'Phone Numbers' memo note with a WARNING level:
-````
-http://MIRROR_IP:MIRROR_PORT/AddMemo?memoTitle=phone%20numbers&item=Daddy%3A%20%2B33123456789&level=WARNING
-````
-**NOTE** : The level property is optional in the request. If not specified, the `INFO` level will be set.
-<br>**NOTE** : Here is an example of a curl command with urlencode syntax
-````
-curl -G -v "http://MIRROR_IP:MIRROR_PORT/AddMemo?memoTitle=SHOPPING" --data-urlencode "item=Bonjour, êtes-vous allées dans votre boutique préférée ?"
 ````
 
 ### To remove the second displayed memo of the 'Phone Numbers' memo note:

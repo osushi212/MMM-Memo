@@ -1,3 +1,3 @@
-{"text":"repair the door/Canceling a subscription","title":"today","bgColor":"#ffd1d1","textColor":"#000000","angle":2}
+{"text":"repair the door\nCanceling a subscription","title":"today","bgColor":"#ffd1d1","textColor":"#000000","angle":2}
 {"text":"make report","title":"work","bgColor":"#d1ffd1","textColor":"#000000","angle":-3}
 {"title":"Shopping","text":"Fruits\nbanana\nbeer"}

@@ -2,6 +2,7 @@
 This an extension for the [MagicMirror²](https://magicmirror.builders/).
 <br>This Module is used to add one to many memo notes on your Magic Mirror.
 <br>Content is manageable through HTTP get requests.
+<br>This is just draft model. You can use just addition by HTTP.
 
 ## What does it look like
 <img width="604" height="735" alt="スクリーンショット 2025-09-07 002420" src="https://github.com/user-attachments/assets/27eeafa0-5f3b-4bbd-9fc3-ee4ddf7d587d" />

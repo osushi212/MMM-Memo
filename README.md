@@ -41,10 +41,6 @@ If you declare several modules in the `config/config.js` file, you will get seve
 
 ## How to Use
 
-I'm using this module with my Jarvis installation from [DomotiqueFacile](http://domotiquefacile.fr/jarvis/).
-<br>When I speak to Jarvis, I say for example : "add FRUITS to the SHOPPING memo list", and Jarvis automatically sends a HTTP get request to the MMM-Memo module.
-<br><br>The available HTTP get requests are the following at the moment:
-
 ### To add 'Fruits' to the 'Shopping' memo note:
 ````
 http://MIRROR_IP:8081/memo?text=Fruits&title=Shopping

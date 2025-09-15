@@ -2,7 +2,6 @@
 This an extension for the [MagicMirror²](https://magicmirror.builders/).
 <br>This Module is used to add one to many memo notes on your Magic Mirror.
 <br>Content is manageable through HTTP get requests.
-<br>This is just draft model. You can use just addition by HTTP.
 
 ## What does it look like
 <img width="604" height="735" alt="スクリーンショット 2025-09-07 002420" src="https://github.com/user-attachments/assets/27eeafa0-5f3b-4bbd-9fc3-ee4ddf7d587d" />
@@ -54,23 +53,13 @@ http://MIRROR_IP:8081/memo?text=Fruits&title=Shopping
 ### To remove the 'Fruits' on the memo of the 'Shopping' memo note:
 ````
 http://MIRROR_IP:8081/removememo?text=Fruits&title=Shopping
+http://MIRROR_IP:8081/Removememo?title=Shopping1&text=Fru
+
 ````
 
-### To remove ALL memos of the 'Phone Numbers' memo note:
+### To remove ALL memos of the 'Shopping' memo note:
 ````
-http://MIRROR_IP:MIRROR_PORT/RemoveMemo?memoTitle=phone%20numbers&item=ALL
-````
+http://MIRROR_IP:8081/Removememo?title=Shopping
 
-### To temporary display the second memo of the 'Shopping' memo note:
 ````
-http://MIRROR_IP:MIRROR_PORT/DisplayMemo?memoTitle=SHOPPING&item=2
-````
-Memo note is displayed using the [default alert module](https://github.com/MichMich/MagicMirror/tree/master/modules/default/alert),
-so it is necessary to configure this alert module in your `config/config.js` file if you want to see notifications.
-<br><br>**NOTE** : I saw a problem when more than one unique MMM-Memo module is defined in the `config/config.js` file.
-<br>Indeed, the same notification is displayed several times (e.g. 3 times if you defined 3 MMM-Memo modules). I did not
-deeply investigate to understand the root cause.
-<br>A workaround is to use the `memoDisplayNotification` property by setting it to `true` for ONLY ONE MMM-MEMO MODULE
-<br>Do not forget to have ONE `memoDisplayNotification` set to `true` if you want to see notifications.
-
 

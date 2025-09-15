@@ -39,7 +39,7 @@ module.exports = NodeHelper.create({
         const port = 8081;
         const app = this.expressApp;
 
-        // add the memo (GET)
+        // メモ追加 (GET)
         app.get("/memo", (req, res) => {
             const memo = {
                 title: req.query.title || "",
@@ -52,52 +52,62 @@ module.exports = NodeHelper.create({
             res.send({ success: !!memo.text, memo });
         });
 
-        // add the memo (POST)
+        // メモ追加 (POST)
         app.post("/memo", (req, res) => {
             const memo = req.body;
             if (memo && memo.text) this.appendMemo(memo);
             res.send({ success: !!(memo && memo.text), memo });
         });
 
-        // delete the memo (GET)
+        // メモ削除 (GET)
         app.get("/Removememo", (req, res) => {
             const title = req.query.title || "";
             const text = req.query.text || "";
 
-            if (!text) {
-                res.send({ success: false, error: "text が必要です" });
+            if (!title) {
+                res.send({ success: false, error: "title が必要です" });
                 return;
             }
 
             let removed = false;
-            this.memoData.forEach((m, idx) => {
-                if (m.title === title) {
-                    // text を改行で分割して、指定されたものを除外
-                    const lines = m.text.split("\n").filter(line => line.trim() !== text);
-                    if (lines.length !== m.text.split("\n").length) {
-                        removed = true;
-                        m.text = lines.join("\n");
-                    }
-                }
-            });
 
-            // delete empty memo
-            this.memoData = this.memoData.filter(m => m.text.trim() !== "");
+            if (text) {
+                // 前方一致で text を削除
+                this.memoData.forEach(m => {
+                    if (m.title === title) {
+                        const before = m.text.split("\n");
+                        const after = before.filter(line => !line.startsWith(text));
+                        if (before.length !== after.length) {
+                            m.text = after.join("\n");
+                            removed = true;
+                        }
+                    }
+                });
+
+                // 空になったメモは削除
+                this.memoData = this.memoData.filter(m => m.text.trim() !== "");
+
+            } else {
+                // text が空なら、title に一致するメモをすべて削除
+                const beforeLength = this.memoData.length;
+                this.memoData = this.memoData.filter(m => m.title !== title);
+                removed = this.memoData.length !== beforeLength;
+            }
 
             if (!removed) {
-                res.send({ success: false, error: "not found the memo" });
+                res.send({ success: false, error: "対象のメモが見つかりません" });
                 return;
             }
 
             try {
-                // save the file
+                // ファイルに保存し直す
                 const lines = this.memoData.map(m => JSON.stringify(m));
                 fs.writeFileSync(this.config.memofile, lines.join("\n") + "\n");
                 this.sendSocketNotification("MEMO_UPDATE", this.memoData);
-                res.send({ success: true, removed: { title, text } });
+                res.send({ success: true, removed: { title, text: text || "ALL" } });
             } catch(e) {
                 console.error("MMM-Memo remove error:", e);
-                res.send({ success: false, error: "error writing file" });
+                res.send({ success: false, error: "ファイル書き込みエラー" });
             }
         });
 
@@ -107,7 +117,7 @@ module.exports = NodeHelper.create({
     },
 
     appendMemo: function(newMemo) {
-        // add the memo on same title
+        // 同じタイトルがあれば追記
         let found = false;
         this.memoData.forEach(m => {
             if (m.title === newMemo.title) {
@@ -119,7 +129,7 @@ module.exports = NodeHelper.create({
         if (!found) this.memoData.push(newMemo);
 
         try {
-            // write to the memo.txt
+            // ファイル書き込み（全体を書き直す）
             const lines = this.memoData.map(m => JSON.stringify(m));
             fs.writeFileSync(this.config.memofile, lines.join("\n") + "\n");
             this.sendSocketNotification("MEMO_UPDATE", this.memoData);

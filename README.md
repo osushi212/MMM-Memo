@@ -4,7 +4,7 @@ This an extension for the [MagicMirror²](https://magicmirror.builders/).
 <br>Content is manageable through HTTP get requests.
 
 ## What does it look like
-<img width="604" height="735" alt="スクリーンショット 2025-09-07 002420" src="https://github.com/user-attachments/assets/27eeafa0-5f3b-4bbd-9fc3-ee4ddf7d587d" />
+<img width="371" height="525" alt="スクリーンショット 2025-09-15 155911" src="https://github.com/user-attachments/assets/ac85f287-8881-49a5-88f4-511e6a61a1cc" />
 
 
 ## Dependencies

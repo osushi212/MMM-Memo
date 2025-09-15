@@ -39,7 +39,7 @@ module.exports = NodeHelper.create({
         const port = 8081;
         const app = this.expressApp;
 
-        // メモ追加 (GET)
+        // add the memo (GET)
         app.get("/memo", (req, res) => {
             const memo = {
                 title: req.query.title || "",
@@ -52,27 +52,27 @@ module.exports = NodeHelper.create({
             res.send({ success: !!memo.text, memo });
         });
 
-        // メモ追加 (POST)
+        // add the memo (POST)
         app.post("/memo", (req, res) => {
             const memo = req.body;
             if (memo && memo.text) this.appendMemo(memo);
             res.send({ success: !!(memo && memo.text), memo });
         });
 
-        // メモ削除 (GET)
+        // remove the memo (GET)
         app.get("/Removememo", (req, res) => {
             const title = req.query.title || "";
             const text = req.query.text || "";
 
             if (!title) {
-                res.send({ success: false, error: "title が必要です" });
+                res.send({ success: false, error: "no title" });
                 return;
             }
 
             let removed = false;
 
             if (text) {
-                // 前方一致で text を削除
+                // Delete text(1line) by matching the beginning
                 this.memoData.forEach(m => {
                     if (m.title === title) {
                         const before = m.text.split("\n");
@@ -84,30 +84,30 @@ module.exports = NodeHelper.create({
                     }
                 });
 
-                // 空になったメモは削除
+                // remove empty memo
                 this.memoData = this.memoData.filter(m => m.text.trim() !== "");
 
             } else {
-                // text が空なら、title に一致するメモをすべて削除
+                // If text is empty, delete all notes that match title
                 const beforeLength = this.memoData.length;
                 this.memoData = this.memoData.filter(m => m.title !== title);
                 removed = this.memoData.length !== beforeLength;
             }
 
             if (!removed) {
-                res.send({ success: false, error: "対象のメモが見つかりません" });
+                res.send({ success: false, error: "The target note cannot be found" });
                 return;
             }
 
             try {
-                // ファイルに保存し直す
+                // save back to file
                 const lines = this.memoData.map(m => JSON.stringify(m));
                 fs.writeFileSync(this.config.memofile, lines.join("\n") + "\n");
                 this.sendSocketNotification("MEMO_UPDATE", this.memoData);
                 res.send({ success: true, removed: { title, text: text || "ALL" } });
             } catch(e) {
                 console.error("MMM-Memo remove error:", e);
-                res.send({ success: false, error: "ファイル書き込みエラー" });
+                res.send({ success: false, error: "File write error" });
             }
         });
 
@@ -117,7 +117,7 @@ module.exports = NodeHelper.create({
     },
 
     appendMemo: function(newMemo) {
-        // 同じタイトルがあれば追記
+        // write on same titile
         let found = false;
         this.memoData.forEach(m => {
             if (m.title === newMemo.title) {
@@ -129,7 +129,7 @@ module.exports = NodeHelper.create({
         if (!found) this.memoData.push(newMemo);
 
         try {
-            // ファイル書き込み（全体を書き直す）
+            // Write file (rewrite the whole thing)
             const lines = this.memoData.map(m => JSON.stringify(m));
             fs.writeFileSync(this.config.memofile, lines.join("\n") + "\n");
             this.sendSocketNotification("MEMO_UPDATE", this.memoData);
@@ -138,3 +138,4 @@ module.exports = NodeHelper.create({
         }
     }
 });
+

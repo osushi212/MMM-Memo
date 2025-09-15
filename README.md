@@ -51,9 +51,9 @@ I'm using this module with my Jarvis installation from [DomotiqueFacile](http://
 http://MIRROR_IP:8081/memo?text=Fruits&title=Shopping
 ````
 
-### To remove the second displayed memo of the 'Phone Numbers' memo note:
+### To remove the 'Fruits' on the memo of the 'Shopping' memo note:
 ````
-http://MIRROR_IP:MIRROR_PORT/RemoveMemo?memoTitle=phone%20numbers&item=2
+http://MIRROR_IP:8081/removememo?text=Fruits&title=Shopping
 ````
 
 ### To remove ALL memos of the 'Phone Numbers' memo note:
